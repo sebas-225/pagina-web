@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Venta de Trailers</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #ffffff;
+    }
+    .trailer {
+      background-color: #eee7e7;
+      border: 1px solid #fd1d1d;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .trailer img {
+      max-width: 150px;
+      height: auto;
+    }
+    .info {
+      flex: 1;
+      padding: 0 15px;
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .total {
+      font-size: 20px;
+      font-weight: bold;
+      margin-top: 20px;
+      color: rgb(3, 3, 3);
+    }
+    button {
+      padding: 5px 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #buy-button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background-color: #080000;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    #purchase-form {
+      margin-top: 20px;
+      background: #f7f7f7;
+      padding: 15px;
+      border-radius: 8px;
+      display: none;
+      max-width: 400px;
+    }
+    #purchase-form label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+    #purchase-form input, #purchase-form textarea {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 12px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+    #purchase-form button {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      font-size: 16px;
+      border-radius: 5px;
+    }
+    #confirmation {
+      margin-top: 20px;
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      padding: 15px;
+      border-radius: 8px;
+      display: none;
+      max-width: 400px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Venta de Trailers</h1>
+  <div id="trailers"></div>
+  <div class="total">Total: $<span id="total">0</span></div>
+
+  <button id="buy-button" onclick="showForm()">Comprar</button>
+
+  <form id="purchase-form" onsubmit="handlePurchase(event)">
+    <h2>Formulario de Compra</h2>
+    <label for="name">Nombre completo:</label>
+    <input type="text" id="name" name="name" required />
+
+    <label for="email">Correo electrónico:</label>
+    <input type="email" id="email" name="email" required />
+
+    <label for="address">Dirección:</label>
+    <textarea id="address" name="address" rows="3" required></textarea>
+
+    <button type="submit">Finalizar compra</button>
+  </form>
+
+  <div id="confirmation"></div>
+
+  <script>
+    const trailersData = [
+      { id: 1, nombre: "Kenworth t680 next gen", precio: 4250000, imagen: "Trailer 1.jpg" },
+      { id: 2, nombre: "Kenworth t800", precio: 2700000, imagen: "Trailer 2.jpg" }, 
+      { id: 3, nombre: "Kenworth t660", precio: 1850000, imagen: "Trailer 3.jpg" },
+      { id: 4, nombre: "Kenworth t600", precio: 767000, imagen: "Trailer 4.jpg" },
+      { id: 5, nombre: "Kenworth w900", precio: 1900000, imagen: "Trailer 5.jpg" },
+      { id: 6, nombre: "Kenworth t680", precio: 1890000, imagen: "Trailer 6.jpg" },
+      { id: 7, nombre: "Freightliner cascadia", precio: 1700000, imagen: "Trailer 7.jpg" },
+      { id: 8, nombre: "Freightliner ", precio: 985000, imagen: "Trailer 8.jpg" },
+      { id: 9, nombre: "Kenworth K100", precio: 780000, imagen: "Trailer 9.jpg" },
+      { id: 10, nombre: "Mack", precio: 2500000, imagen: "Trailer 10.jpg" }
+    ];
+
+    let cart = JSON.parse(localStorage.getItem("cart")) || {};
+
+    function saveCart() {
+      localStorage.setItem("cart", JSON.stringify(cart));
+    }
+
+    function renderTrailers() {
+      const container = document.getElementById("trailers");
+      container.innerHTML = "";
+      trailersData.forEach(trailer => {
+        const count = cart[trailer.id] || 0;
+        const div = document.createElement("div");
+        div.className = "trailer";
+        div.innerHTML = `
+          <img src="${trailer.imagen || 'https://via.placeholder.com/150'}" alt="${trailer.nombre}" />
+          <div class="info">
+            <h3>${trailer.nombre}</h3>
+            <p>Precio: $${trailer.precio.toLocaleString()}</p>
+          </div>
+          <div class="controls">
+            <button onclick="removeTrailer(${trailer.id})">-</button>
+            <span>${count}</span>
+            <button onclick="addTrailer(${trailer.id})">+</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+      updateTotal();
+    }
+
+    function addTrailer(id) {
+      cart[id] = (cart[id] || 0) + 1;
+      saveCart();
+      renderTrailers();
+    }
+
+    function removeTrailer(id) {
+      if (cart[id]) {
+        cart[id]--;
+        if (cart[id] <= 0) delete cart[id];
+        saveCart();
+        renderTrailers();
+      }
+    }
+
+    function updateTotal() {
+      let total = 0;
+      for (const id in cart) {
+        const trailer = trailersData.find(t => t.id == id);
+        if (trailer) {
+          total += trailer.precio * cart[id];
+        }
+      }
+      document.getElementById("total").textContent = total.toLocaleString();
+    }
+
+    function showForm() {
+      if (Object.keys(cart).length === 0) {
+        alert("El carrito está vacío. Por favor agrega algún trailer antes de comprar.");
+        return;
+      }
+      document.getElementById("purchase-form").style.display = "block";
+      document.getElementById("confirmation").style.display = "none";
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function handlePurchase(event) {
+      event.preventDefault();
+      const name = event.target.name.value.trim();
+      const email = event.target.email.value.trim();
+      const address = event.target.address.value.trim();
+
+      if (!name || !email || !address) {
+        alert("Por favor completa todos los campos.");
+        return;
+      }
+
+     
+
+      const totalAmount = document.getElementById("total").textContent;
+
+      const confirmationDiv = document.getElementById("confirmation");
+      confirmationDiv.innerHTML = `
+        <h3>¡Gracias por tu compra, ${name}!</h3>
+        <p>Hemos recibido tu pedido por un total de <strong>$${totalAmount}</strong>.</p>
+        <p>Pronto nos comunicaremos al correo <strong>${email}</strong> para confirmar la entrega en la dirección:</p>
+        <p>${address}</p>
+      `;
+      confirmationDiv.style.display = "block";
+
+     
+      cart = {};
+      saveCart();
+      renderTrailers();
+      event.target.reset();
+      document.getElementById("purchase-form").style.display = "none";
+    }
+
+    renderTrailers();
+  </script>
+</body>
+</html>
+
